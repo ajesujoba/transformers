@@ -1919,6 +1919,7 @@ class Trainer:
     def _inner_training_loop(
         self, batch_size=None, args=None, resume_from_checkpoint=None, trial=None, ignore_keys_for_eval=None
     ):
+        grads = {}
         self.accelerator.free_memory()
         self._train_batch_size = batch_size
         if self.args.auto_find_batch_size:
@@ -2311,13 +2312,27 @@ class Trainer:
                         # Delay optimizer scheduling until metrics are generated
                         if not isinstance(self.lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
                             self.lr_scheduler.step()
-
+                    
+                    # if self.state.global_step + 1 % self.args.eval_steps == 0:
+                    grads = {n:p.grad.cpu().numpy() for n, p in model.named_parameters()}
+                        
+                    
+                    
                     model.zero_grad()
                     self.state.global_step += 1
                     self.state.epoch = epoch + (step + 1 + steps_skipped) / steps_in_epoch
                     self.control = self.callback_handler.on_step_end(args, self.state, self.control)
 
-                    self._maybe_log_save_evaluate(tr_loss, grad_norm, model, trial, epoch, ignore_keys_for_eval)
+                    self._maybe_log_save_evaluate(tr_loss, grad_norm, model, trial, epoch, ignore_keys_for_eval, grads=grads)
+                    # print("HElllloooooooooooooooooooo")
+                    #print(self.control.should_save, self.state.global_step)
+                    #if grads and self.control.should_save:
+                    #output_dir = os.path.join(checkpoint_dir, f"{PREFIX_CHECKPOINT_DIR}-{self.state.global_step}")
+                    #import json
+                    #with open(f'{output_dir}/gradients.json', 'w') as json_file:
+                    #json.dump(grads, json_file, indent=4)  # indent=4 is optional, but it makes the file more readable
+                    grads = {}
+
                 else:
                     self.control = self.callback_handler.on_substep_end(args, self.state, self.control)
 
@@ -2721,7 +2736,7 @@ class Trainer:
                 f"There were unexpected keys in the checkpoint model loaded: {load_result.unexpected_keys}."
             )
 
-    def _maybe_log_save_evaluate(self, tr_loss, grad_norm, model, trial, epoch, ignore_keys_for_eval):
+    def _maybe_log_save_evaluate(self, tr_loss, grad_norm, model, trial, epoch, ignore_keys_for_eval, grads=dict()):
         if self.control.should_log and self.state.global_step > self._globalstep_last_logged:
             if is_torch_xla_available():
                 xm.mark_step()
@@ -2759,6 +2774,14 @@ class Trainer:
 
         if self.control.should_save:
             self._save_checkpoint(model, trial, metrics=metrics)
+            if grads:
+                chkdir = self.args.output_dir
+                output_dir = os.path.join(chkdir, f"{PREFIX_CHECKPOINT_DIR}-{self.state.global_step}")
+                import pickle # json
+                with open(f'{output_dir}/gradients.pkl', "wb") as file:
+                    pickle.dump(grads, file)
+                #with open(f'{output_dir}/gradients.json', 'w') as json_file:
+                #json.dump(grads, json_file, indent=4)  # indent=4 is optional, but it makes the file more readable
             self.control = self.callback_handler.on_save(self.args, self.state, self.control)
 
     def _load_rng_state(self, checkpoint):
