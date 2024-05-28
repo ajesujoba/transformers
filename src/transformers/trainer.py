@@ -2345,16 +2345,12 @@ class Trainer:
                     self.control = self.callback_handler.on_step_end(args, self.state, self.control)
 
                     if self.state.global_step in final_list:
+                        print("I should save something at this point....................")
                         self.control.should_save = True
+                        print(self.control.should_save, " condition hrere.......")
 
                     self._maybe_log_save_evaluate(tr_loss, grad_norm, model, trial, epoch, ignore_keys_for_eval, grads=grads)
-                    # print("HElllloooooooooooooooooooo")
-                    #print(self.control.should_save, self.state.global_step)
-                    #if grads and self.control.should_save:
-                    #output_dir = os.path.join(checkpoint_dir, f"{PREFIX_CHECKPOINT_DIR}-{self.state.global_step}")
-                    #import json
-                    #with open(f'{output_dir}/gradients.json', 'w') as json_file:
-                    #json.dump(grads, json_file, indent=4)  # indent=4 is optional, but it makes the file more readable
+
                     grads = {}
 
                 else:
