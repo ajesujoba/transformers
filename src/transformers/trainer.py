@@ -2328,15 +2328,15 @@ class Trainer:
                     grads = {n:p.grad.cpu().numpy() for n, p in model.named_parameters()}
                     # Compute the magnitude of gradients for each parameter within each layer
                     parameter_magnitudes = {}
-                    for name, grad in parameter_gradients.items():
-                        layer_name = name.split('.')[0]  # Assuming parameters are named as 'layer_name.parameter_name'
-                        if layer_name not in parameter_magnitudes:
-                            parameter_magnitudes[layer_name] = []
-                            parameter_magnitudes[layer_name].append(torch.norm(grad))
-                            # Aggregate gradients across parameters within each layer
-                            layer_parameter_gradients = {}
-                            for layer_name, magnitudes in parameter_magnitudes.items():
-                                layer_parameter_gradients[layer_name] = sum(magnitudes)
+                    #for name, grad in parameter_gradients.items():
+                    #    layer_name = name.split('.')[0]  # Assuming parameters are named as 'layer_name.parameter_name'
+                    #    if layer_name not in parameter_magnitudes:
+                    #        parameter_magnitudes[layer_name] = []
+                    #        parameter_magnitudes[layer_name].append(torch.norm(grad))
+                    #        # Aggregate gradients across parameters within each layer
+                    #        layer_parameter_gradients = {}
+                    #        for layer_name, magnitudes in parameter_magnitudes.items():
+                    #            layer_parameter_gradients[layer_name] = sum(magnitudes)
 
                     
                     model.zero_grad()
