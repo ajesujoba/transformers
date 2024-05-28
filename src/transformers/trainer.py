@@ -1920,6 +1920,17 @@ class Trainer:
         self, batch_size=None, args=None, resume_from_checkpoint=None, trial=None, ignore_keys_for_eval=None
     ):
         grads = {}
+        # Generate the required list using for storying the checkpoint 
+        # List of 10s between 10 and 100
+        list_10_to_100 = list(range(10, 101, 10))
+        # List of 10s between 900 and 1100
+        list_900_to_1100 = list(range(900, 1101, 10))
+        # Exclude 1000 from the second list
+        list_900_to_1100.remove(1000)
+
+        # Combine the two lists
+        final_list = list_10_to_100 + list_900_to_1100
+    
         self.accelerator.free_memory()
         self._train_batch_size = batch_size
         if self.args.auto_find_batch_size:
@@ -2315,13 +2326,26 @@ class Trainer:
                     
                     # if self.state.global_step + 1 % self.args.eval_steps == 0:
                     grads = {n:p.grad.cpu().numpy() for n, p in model.named_parameters()}
-                        
-                    
+                    # Compute the magnitude of gradients for each parameter within each layer
+                    parameter_magnitudes = {}
+                    for name, grad in parameter_gradients.items():
+                        layer_name = name.split('.')[0]  # Assuming parameters are named as 'layer_name.parameter_name'
+                        if layer_name not in parameter_magnitudes:
+                            parameter_magnitudes[layer_name] = []
+                            parameter_magnitudes[layer_name].append(torch.norm(grad))
+                            # Aggregate gradients across parameters within each layer
+                            layer_parameter_gradients = {}
+                            for layer_name, magnitudes in parameter_magnitudes.items():
+                                layer_parameter_gradients[layer_name] = sum(magnitudes)
+
                     
                     model.zero_grad()
                     self.state.global_step += 1
                     self.state.epoch = epoch + (step + 1 + steps_skipped) / steps_in_epoch
                     self.control = self.callback_handler.on_step_end(args, self.state, self.control)
+
+                    if self.state.global_step in final_list:
+                        self.control.should_save = True
 
                     self._maybe_log_save_evaluate(tr_loss, grad_norm, model, trial, epoch, ignore_keys_for_eval, grads=grads)
                     # print("HElllloooooooooooooooooooo")
