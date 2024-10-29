@@ -1919,6 +1919,15 @@ class Trainer:
     def _inner_training_loop(
         self, batch_size=None, args=None, resume_from_checkpoint=None, trial=None, ignore_keys_for_eval=None
     ):
+        list_10_to_100 = list(range(10, 101, 10))
+        # List of 10s between 900 and 1100
+        list_900_to_1100 = list(range(900, 1101, 10))
+        # Exclude 1000 from the second list
+        list_900_to_1100.remove(1000)
+
+        # Combine the two lists
+        final_list = list_10_to_100 + list_900_to_1100
+
         self.accelerator.free_memory()
         self._train_batch_size = batch_size
         if self.args.auto_find_batch_size:
@@ -2316,7 +2325,9 @@ class Trainer:
                     self.state.global_step += 1
                     self.state.epoch = epoch + (step + 1 + steps_skipped) / steps_in_epoch
                     self.control = self.callback_handler.on_step_end(args, self.state, self.control)
-
+                    if self.state.global_step in final_list:
+                        # print("I should save something at this point....................")
+                        self.control.should_save = True
                     self._maybe_log_save_evaluate(tr_loss, grad_norm, model, trial, epoch, ignore_keys_for_eval)
                 else:
                     self.control = self.callback_handler.on_substep_end(args, self.state, self.control)
