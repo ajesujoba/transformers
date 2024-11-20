@@ -1453,6 +1453,10 @@ class TrainingArguments:
         default=False,
         metadata={"help": "Break eval metrics calculation into batches to save memory."},
     )
+    ocheckpoints: Optional[str] = field(
+        default=None,  
+        metadata={"help": "List of checkpoint steps to save."},
+    )
 
     def __post_init__(self):
         # Parse in args that could be `dict` sent in from the CLI as a string

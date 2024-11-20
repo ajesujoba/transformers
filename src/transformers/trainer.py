@@ -1919,14 +1919,19 @@ class Trainer:
     def _inner_training_loop(
         self, batch_size=None, args=None, resume_from_checkpoint=None, trial=None, ignore_keys_for_eval=None
     ):
-        list_10_to_100 = list(range(10, 101, 10))
+        list_10_to_100 = [10, 20, 50, 90, 100] #list(range(10, 101, 10))
         # List of 10s between 900 and 1100
-        list_900_to_1100 = list(range(900, 1101, 10))
+        list_900_to_1100 = [900, 1100] #list(range(900, 1101, 10))
         # Exclude 1000 from the second list
-        list_900_to_1100.remove(1000)
+        # list_900_to_1100.remove(1000)
 
         # Combine the two lists
-        final_list = list_10_to_100 + list_900_to_1100
+        ocheckpoint = self.args.ocheckpoints # list_10_to_100 + list_900_to_1100
+        if ocheckpoint != None and ocheckpoint != '':
+            final_list = [int(x.strip()) for x in ocheckpoint.strip().split(",")]
+            final_list = list(set(final_list))
+        else:
+            final_list = []
 
         self.accelerator.free_memory()
         self._train_batch_size = batch_size
